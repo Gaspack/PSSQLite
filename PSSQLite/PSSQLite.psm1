@@ -37,9 +37,8 @@ Switch ($PSEdition) {
 }
 
 Try {
-    $PSScriptRoot2 = 'C:\Shared\Powershell\Modules\PSSQLite\1.1.0'
-    $SQLiteAssembly = Join-path $PSScriptRoot2 "core\$OS\System.Data.SQLite.dll"
-    $SQLiteInterop = Join-path $PSScriptRoot2 "core\$OS\SQLite.Interop.dll"
+    $SQLiteAssembly = Join-path $PSScriptRoot "core\$OS\System.Data.SQLite.dll"
+    $SQLiteInterop = Join-path $PSScriptRoot "core\$OS\SQLite.Interop.dll"
     Add-Type -path $SQLiteAssembly -CompilerOptions "CFLAGS=-DSQLITE_ENABLE_JSON1" -PassThru -ErrorAction Stop
 }
 Catch {

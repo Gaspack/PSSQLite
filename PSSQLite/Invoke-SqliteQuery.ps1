@@ -171,141 +171,135 @@
         SQL
     #>
 
-    [CmdletBinding( DefaultParameterSetName='Src-Que' )]
-    [OutputType([System.Management.Automation.PSCustomObject],[System.Data.DataRow],[System.Data.DataTable],[System.Data.DataTableCollection],[System.Data.DataSet])]
+    [CmdletBinding( DefaultParameterSetName = 'Src-Que' )]
+    [OutputType([System.Management.Automation.PSCustomObject], [System.Data.DataRow], [System.Data.DataTable], [System.Data.DataTableCollection], [System.Data.DataSet])]
     param(
-        [Parameter( ParameterSetName='Src-Que',
-                    Position=0,
-                    Mandatory=$true,
-                    ValueFromPipeline=$true,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false,
-                    HelpMessage='SQLite Data Source required...' )]
-        [Parameter( ParameterSetName='Src-Fil',
-                    Position=0,
-                    Mandatory=$true,
-                    ValueFromPipeline=$true,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false,
-                    HelpMessage='SQLite Data Source required...' )]
-        [Alias('Path','File','FullName','Database')]
+        [Parameter( ParameterSetName = 'Src-Que',
+            Position = 0,
+            Mandatory = $true,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false,
+            HelpMessage = 'SQLite Data Source required...' )]
+        [Parameter( ParameterSetName = 'Src-Fil',
+            Position = 0,
+            Mandatory = $true,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false,
+            HelpMessage = 'SQLite Data Source required...' )]
+        [Alias('Path', 'File', 'FullName', 'Database')]
         [validatescript({
-            #This should match memory, or the parent path should exist
-            $Parent = Split-Path $_ -Parent
-            if(
-                $_ -match ":MEMORY:|^WHAT$" -or
+                #This should match memory, or the parent path should exist
+                $Parent = Split-Path $_ -Parent
+                if (
+                    $_ -match ":MEMORY:|^WHAT$" -or
                 ( $Parent -and (Test-Path $Parent))
-            ){
-                $True
-            }
-            else {
-                Throw "Invalid datasource '$_'.`nThis must match :MEMORY:, or '$Parent' must exist"
-            }
-        })]
+                ) {
+                    $True
+                }
+                else {
+                    Throw "Invalid datasource '$_'.`nThis must match :MEMORY:, or '$Parent' must exist"
+                }
+            })]
         [string[]]
         $DataSource,
     
-        [Parameter( ParameterSetName='Src-Que',
-                    Position=1,
-                    Mandatory=$true,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false )]
-        [Parameter( ParameterSetName='Con-Que',
-                    Position=1,
-                    Mandatory=$true,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false )]
+        [Parameter( ParameterSetName = 'Src-Que',
+            Position = 1,
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false )]
+        [Parameter( ParameterSetName = 'Con-Que',
+            Position = 1,
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false )]
         [string]
         $Query,
         
-        [Parameter( ParameterSetName='Src-Fil',
-                    Position=1,
-                    Mandatory=$true,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false )]
-        [Parameter( ParameterSetName='Con-Fil',
-                    Position=1,
-                    Mandatory=$true,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false )]
+        [Parameter( ParameterSetName = 'Src-Fil',
+            Position = 1,
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false )]
+        [Parameter( ParameterSetName = 'Con-Fil',
+            Position = 1,
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false )]
         [ValidateScript({ Test-Path $_ })]
         [string]
         $InputFile,
 
-        [Parameter( Position=2,
-                    Mandatory=$false,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false )]
+        [Parameter( Position = 2,
+            Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false )]
         [Int32]
-        $QueryTimeout=600,
+        $QueryTimeout = 600,
     
-        [Parameter( Position=3,
-                    Mandatory=$false,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false )]
-        [ValidateSet("DataSet", "DataTable", "DataRow","PSObject","SingleValue")]
+        [Parameter( Position = 3,
+            Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false )]
+        [ValidateSet("DataSet", "DataTable", "DataRow", "PSObject", "SingleValue")]
         [string]
-        $As="PSObject",
+        $As = "PSObject",
     
-        [Parameter( Position=4,
-                    Mandatory=$false,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false )]
+        [Parameter( Position = 4,
+            Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false )]
         [System.Collections.IDictionary]
         $SqlParameters,
 
-        [Parameter( Position=5,
-                    Mandatory=$false )]
+        [Parameter( Position = 5,
+            Mandatory = $false )]
         [switch]
         $AppendDataSource,
 
-        [Parameter( Position=6,
-                    Mandatory=$false )]
-        [validatescript({Test-Path $_ })]
+        [Parameter( Position = 6,
+            Mandatory = $false )]
+        [validatescript({ Test-Path $_ })]
         [string]$AssemblyPath = $SQLiteAssembly,
 
         [Parameter( ParameterSetName = 'Con-Que',
-                    Position=7,
-                    Mandatory=$true,
-                    ValueFromPipeline=$false,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false )]
+            Position = 7,
+            Mandatory = $true,
+            ValueFromPipeline = $false,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false )]
         [Parameter( ParameterSetName = 'Con-Fil',
-                    Position=7,
-                    Mandatory=$true,
-                    ValueFromPipeline=$false,
-                    ValueFromPipelineByPropertyName=$true,
-                    ValueFromRemainingArguments=$false )]
+            Position = 7,
+            Mandatory = $true,
+            ValueFromPipeline = $false,
+            ValueFromPipelineByPropertyName = $true,
+            ValueFromRemainingArguments = $false )]
         [Alias( 'Connection', 'Conn' )]
         [System.Data.SQLite.SQLiteConnection]
         $SQLiteConnection
     ) 
 
-    Begin
-    {
+    Begin {
         #Assembly, should already be covered by psm1
-            Try
-            {
-                [void][System.Data.SQLite.SQLiteConnection]
+        Try {
+            [void][System.Data.SQLite.SQLiteConnection]
+        }
+        Catch {
+            if ( -not ($Library = Add-Type -path $SQLiteAssembly -PassThru -ErrorAction stop) ) {
+                Throw "This module requires the ADO.NET driver for SQLite:`n`thttp://system.data.sqlite.org/index.html/doc/trunk/www/downloads.wiki"
             }
-            Catch
-            {
-                if( -not ($Library = Add-Type -path $SQLiteAssembly -PassThru -ErrorAction stop) )
-                {
-                    Throw "This module requires the ADO.NET driver for SQLite:`n`thttp://system.data.sqlite.org/index.html/doc/trunk/www/downloads.wiki"
-                }
-            }
+        }
 
-        if ($PSBoundParameters.ContainsKey('InputFile')) 
-        { 
+        if ($PSBoundParameters.ContainsKey('InputFile')) { 
             $filePath = $(Resolve-Path $InputFile).path 
-            $Query =  [System.IO.File]::ReadAllText("$filePath")
+            $Query = [System.IO.File]::ReadAllText("$filePath")
             Write-Verbose "Extracted query from [$InputFile]"
         }
         Write-Verbose "Running Invoke-SQLiteQuery with ParameterSet '$($PSCmdlet.ParameterSetName)'.  Performing query '$Query'"
 
-        If($As -eq "PSObject")
-        {
+        If ($As -eq "PSObject") {
             #This code scrubs DBNulls.  Props to Dave Wyatt
             $cSharp = @'
                 using System;
@@ -337,32 +331,27 @@
                 }
 '@
 
-            Try
-            {
-                if ($PSEdition -eq 'Core') 
-                {
+            Try {
+                if ($PSEdition -eq 'Core') {
                     # Core doesn't auto-load these assemblies unlike desktop?
                     # Not csharp coder, unsure why
                     # by fffnite
                     $Ref = @( 
-                            'System.Data.Common'
-                            'System.Management.Automation'
-                            'System.ComponentModel.TypeConverter'
-                            )
+                        'System.Data.Common'
+                        'System.Management.Automation'
+                        'System.ComponentModel.TypeConverter'
+                    )
                 }
-                else 
-                {
+                else {
                     $Ref = @(
-                            'System.Data'
-                            'System.Xml'
-                            )
+                        'System.Data'
+                        'System.Xml'
+                    )
                 }
                 Add-Type -TypeDefinition $cSharp -ReferencedAssemblies $Ref -ErrorAction stop
             }
-            Catch
-            {
-                If(-not $_.ToString() -like "*The type name 'DBNullScrubber' already exists*")
-                {
+            Catch {
+                If (-not $_.ToString() -like "*The type name 'DBNullScrubber' already exists*") {
                     Write-Warning "Could not load DBNullScrubber.  Defaulting to DataRow output: $_"
                     $As = "Datarow"
                 }
@@ -370,58 +359,45 @@
         }
 
         #Handle existing connections
-        if($PSBoundParameters.Keys -contains "SQLiteConnection")
-        {
-            if($SQLiteConnection.State -notlike "Open")
-            {
-                Try
-                {
+        if ($PSBoundParameters.Keys -contains "SQLiteConnection") {
+            if ($SQLiteConnection.State -notlike "Open") {
+                Try {
                     $SQLiteConnection.Open()
                 }
-                Catch
-                {
+                Catch {
                     Throw $_
                 }
             }
 
-            if($SQLiteConnection.state -notlike "Open")
-            {
+            if ($SQLiteConnection.state -notlike "Open") {
                 Throw "SQLiteConnection is not open:`n$($SQLiteConnection | Out-String)"
             }
 
             $DataSource = @("WHAT")
         }
     }
-    Process
-    {
-        foreach($DB in $DataSource)
-        {
+    Process {
+        foreach ($DB in $DataSource) {
 
-            if($PSBoundParameters.Keys -contains "SQLiteConnection")
-            {
+            if ($PSBoundParameters.Keys -contains "SQLiteConnection") {
                 $Conn = $SQLiteConnection
             }
-            else
-            {
+            else {
                 # Resolve the path entered for the database to a proper path name.
                 # This accounts for a variaty of possible ways to provide a path, but
                 # in the end the connection string needs a fully qualified file path.
-                if ($DB -match ":MEMORY:") 
-                {
+                if ($DB -match ":MEMORY:") {
                     $Database = $DB
                 }
-                else 
-                {
+                else {
                     $Database = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($DB)    
                 }
                 
-                if(Test-Path $Database)
-                {
+                if (Test-Path $Database) {
                     Write-Verbose "Querying existing Data Source '$Database'"
                 }
-                else
-                {
-                    Write-Verbose "Creating andn querying Data Source '$Database'"
+                else {
+                    Write-Verbose "Creating and querying Data Source '$Database'"
                 }
 
                 $ConnectionString = "Data Source={0}" -f $Database
@@ -430,12 +406,14 @@
                 $conn.ParseViaFramework = $true #Allow UNC paths, thanks to Ray Alex!
                 Write-Debug "ConnectionString $ConnectionString"
 
-                Try
-                {
-                    $conn.Open() 
+                Try {
+                    $conn.Open()
+					
+                    # https://stackoverflow.com/questions/48611561/filtering-json-with-system-data-sqlite-and-json-each
+                    # $conn.EnableExtensions($true)
+                    #$conn.LoadExtension($SQLiteInterop, "sqlite3_json_init")
                 }
-                Catch
-                {
+                Catch {
                     Write-Error $_
                     continue
                 }
@@ -445,99 +423,80 @@
             $cmd.CommandText = $Query
             $cmd.CommandTimeout = $QueryTimeout
 
-            if ($SqlParameters -ne $null)
-            {
+            if ($SqlParameters -ne $null) {
                 $SqlParameters.GetEnumerator() |
-                    ForEach-Object {
-                        If ($_.Value -ne $null)
-                        {
-                            if($_.Value -is [datetime]) { $_.Value = $_.Value.ToString("yyyy-MM-dd HH:mm:ss") }
-                            $cmd.Parameters.AddWithValue("@$($_.Key)", $_.Value)
-                        }
-                        Else
-                        {
-                            $cmd.Parameters.AddWithValue("@$($_.Key)", [DBNull]::Value)
-                        }
-                    } > $null
+                ForEach-Object {
+                    If ($_.Value -ne $null) {
+                        if ($_.Value -is [datetime]) { $_.Value = $_.Value.ToString("yyyy-MM-dd HH:mm:ss") }
+                        $cmd.Parameters.AddWithValue("@$($_.Key)", $_.Value)
+                    }
+                    Else {
+                        $cmd.Parameters.AddWithValue("@$($_.Key)", [DBNull]::Value)
+                    }
+                } > $null
             }
     
             $ds = New-Object system.Data.DataSet 
             $da = New-Object System.Data.SQLite.SQLiteDataAdapter($cmd)
     
-            Try
-            {
+            Try {
                 [void]$da.fill($ds)
-                if($PSBoundParameters.Keys -notcontains "SQLiteConnection")
-                {
+                if ($PSBoundParameters.Keys -notcontains "SQLiteConnection") {
                     $conn.Close()
                 }
                 $cmd.Dispose()
             }
-            Catch
-            { 
+            Catch { 
                 $Err = $_
-                if($PSBoundParameters.Keys -notcontains "SQLiteConnection")
-                {
+                if ($PSBoundParameters.Keys -notcontains "SQLiteConnection") {
                     $conn.Close()
                 }
-                switch ($ErrorActionPreference.tostring())
-                {
-                    {'SilentlyContinue','Ignore' -contains $_} {}
-                    'Stop' {     Throw $Err }
-                    'Continue' { Write-Error $Err}
-                    Default {    Write-Error $Err}
+                switch ($ErrorActionPreference.tostring()) {
+                    { 'SilentlyContinue', 'Ignore' -contains $_ } {}
+                    'Stop' { Throw $Err }
+                    'Continue' { Write-Error $Err }
+                    Default { Write-Error $Err }
                 }           
             }
 
-            if($AppendDataSource)
-            {
+            if ($AppendDataSource) {
                 #Basics from Chad Miller
-                $Column =  New-Object Data.DataColumn
+                $Column = New-Object Data.DataColumn
                 $Column.ColumnName = "Datasource"
                 $ds.Tables[0].Columns.Add($Column)
 
-                Try
-                {
+                Try {
                     #Someone better at regular expression, feel free to tackle this
                     $Conn.ConnectionString -match "Data Source=(?<DataSource>.*);"
                     $Datasrc = $Matches.DataSource.split(";")[0]
                 }
-                Catch
-                {
+                Catch {
                     $Datasrc = $DB
                 }
 
-                Foreach($row in $ds.Tables[0])
-                {
+                Foreach ($row in $ds.Tables[0]) {
                     $row.Datasource = $Datasrc
                 }
             }
 
-            switch ($As) 
-            { 
-                'DataSet' 
-                {
+            switch ($As) { 
+                'DataSet' {
                     $ds
                 } 
-                'DataTable'
-                {
+                'DataTable' {
                     $ds.Tables
                 } 
-                'DataRow'
-                {
+                'DataRow' {
                     $ds.Tables[0]
                 }
-                'PSObject'
-                {
+                'PSObject' {
                     #Scrub DBNulls - Provides convenient results you can use comparisons with
                     #Introduces overhead (e.g. ~2000 rows w/ ~80 columns went from .15 Seconds to .65 Seconds - depending on your data could be much more!)
-                    foreach ($row in $ds.Tables[0].Rows)
-                    {
+                    foreach ($row in $ds.Tables[0].Rows) {
                         [DBNullScrubber]::DataRowToPSObject($row)
                     }
                 }
-                'SingleValue'
-                {
+                'SingleValue' {
                     $ds.Tables[0] | Select-Object -ExpandProperty $ds.Tables[0].Columns[0].ColumnName
                 }
             }

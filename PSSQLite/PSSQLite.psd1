@@ -4,13 +4,13 @@
     ModuleToProcess    = 'PSSQLite.psm1'
 
     # Version number of this module.
-    ModuleVersion      = '1.1.0'
+    ModuleVersion      = '1.2.0'
 
     # ID used to uniquely identify this module
     GUID               = '381f3394-9b8a-492e-94b4-b3aa9e775761'
 
     # Author of this module
-    Author             = 'Warren Frame'
+    Author             = 'Warren Frame, Gaston Paquette'
 
     # Company or vendor of this module
     CompanyName        = ''
@@ -44,7 +44,7 @@
 
     # Assemblies that must be loaded prior to importing this module
     RequiredAssemblies = @(
-        #  'core\win-x64\System.Data.SQLite.dll'
+        'assemblies/Newtonsoft.Json.dll'
     )
 
     # Script files (.ps1) that are run in the caller's environment prior to importing this module.

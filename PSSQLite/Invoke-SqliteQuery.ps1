@@ -243,7 +243,7 @@
             Mandatory = $false,
             ValueFromPipelineByPropertyName = $true,
             ValueFromRemainingArguments = $false )]
-        [ValidateSet("DataSet", "DataTable", "DataRow", "PSObject", "SingleValue")]
+        [ValidateSet("DataSet", "DataTable", "DataRow", "PSObject", "SingleValue", "Json")]
         [string]
         $As = "PSObject",
     
@@ -299,64 +299,6 @@
         }
         Write-Verbose "Running Invoke-SQLiteQuery with ParameterSet '$($PSCmdlet.ParameterSetName)'.  Performing query '$Query'"
 
-        If ($As -eq "PSObject") {
-            #This code scrubs DBNulls.  Props to Dave Wyatt
-            $cSharp = @'
-                using System;
-                using System.Data;
-                using System.Management.Automation;
-
-                public class DBNullScrubber
-                {
-                    public static PSObject DataRowToPSObject(DataRow row)
-                    {
-                        PSObject psObject = new PSObject();
-
-                        if (row != null && (row.RowState & DataRowState.Detached) != DataRowState.Detached)
-                        {
-                            foreach (DataColumn column in row.Table.Columns)
-                            {
-                                Object value = null;
-                                if (!row.IsNull(column))
-                                {
-                                    value = row[column];
-                                }
-
-                                psObject.Properties.Add(new PSNoteProperty(column.ColumnName, value));
-                            }
-                        }
-
-                        return psObject;
-                    }
-                }
-'@
-
-            Try {
-                if ($PSEdition -eq 'Core') {
-                    # Core doesn't auto-load these assemblies unlike desktop?
-                    # Not csharp coder, unsure why
-                    # by fffnite
-                    $Ref = @( 
-                        'System.Data.Common'
-                        'System.Management.Automation'
-                        'System.ComponentModel.TypeConverter'
-                    )
-                }
-                else {
-                    $Ref = @(
-                        'System.Data'
-                        'System.Xml'
-                    )
-                }
-                Add-Type -TypeDefinition $cSharp -ReferencedAssemblies $Ref -ErrorAction stop
-            }
-            Catch {
-                If (-not $_.ToString() -like "*The type name 'DBNullScrubber' already exists*") {
-                    Write-Warning "Could not load DBNullScrubber.  Defaulting to DataRow output: $_"
-                    $As = "Datarow"
-                }
-            }
-        }
 
         #Handle existing connections
         if ($PSBoundParameters.Keys -contains "SQLiteConnection") {
@@ -490,14 +432,14 @@
                     $ds.Tables[0]
                 }
                 'PSObject' {
-                    #Scrub DBNulls - Provides convenient results you can use comparisons with
-                    #Introduces overhead (e.g. ~2000 rows w/ ~80 columns went from .15 Seconds to .65 Seconds - depending on your data could be much more!)
-                    foreach ($row in $ds.Tables[0].Rows) {
-                        [DBNullScrubber]::DataRowToPSObject($row)
-                    }
+                    [Newtonsoft.Json.JsonConvert]::SerializeObject($ds.Tables, [Newtonsoft.Json.Formatting]::Indented) | ConvertFrom-Json
+
                 }
                 'SingleValue' {
                     $ds.Tables[0] | Select-Object -ExpandProperty $ds.Tables[0].Columns[0].ColumnName
+                }
+                'Json' {
+                    [Newtonsoft.Json.JsonConvert]::SerializeObject($ds.Tables, [Newtonsoft.Json.Formatting]::Indented) 
                 }
             }
         }

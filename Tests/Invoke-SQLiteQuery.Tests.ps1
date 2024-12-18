@@ -9,10 +9,11 @@ BeforeAll {
     $Verbose = @{}
     $PSVersion = $PSVersionTable.PSVersion.Major
     Import-Module $PSScriptRoot\..\PSSQLite -Force -verbose
-    write-host $PSScriptRoot
+
     $SQLiteFile = "$PSScriptRoot\Working.SQLite"
+    
     Remove-Item $SQLiteFile  -force -ErrorAction SilentlyContinue
-    Copy-Item $PSScriptRoot\Names.SQLite $PSScriptRoot\Working.SQLite -force
+    Copy-Item $PSScriptRoot\Names.SQLite $SQLiteFile -force
 
     if ($env:APPVEYOR_REPO_BRANCH -and $env:APPVEYOR_REPO_BRANCH -notlike "master") {
         $Verbose.add("Verbose", $True)
@@ -29,9 +30,11 @@ Describe "New-SQLiteConnection PS$PSVersion" {
         Set-StrictMode -Version latest
 
         It 'should create a connection' {
-            $global:Connection = New-SQLiteConnection @Verbose -DataSource :MEMORY:
-            $global:Connection.ConnectionString | Should -be "Data Source=:MEMORY:;"
-            $global:Connection.State | Should -be "Open"
+            $Connection = New-SQLiteConnection @Verbose -DataSource :MEMORY:
+            $Connection.ConnectionString | Should -be "Data Source=:MEMORY:;"
+            $Connection.State | Should -be "Open"
+
+            Set-Variable -Name "Connection" -Value $Connection -Scope Script
         }
     }
 }
@@ -43,42 +46,41 @@ Describe "Invoke-SQLiteQuery PS$PSVersion" {
         Set-StrictMode -Version latest
 
         It 'should take file input' {
-            write-host $SQLiteFile
-            $Out = @( Invoke-SqliteQuery @Verbose -DataSource $SQLiteFile -InputFile $PSScriptRoot\Test.SQL )
+            
+            $Out = Invoke-SqliteQuery @Verbose -DataSource $SQLiteFile -InputFile $PSScriptRoot\Test.SQL -ErrorAction Stop 
             $Out.count | Should -be 2
             $Out[1].OrderID | Should -be 500
         }
 
         It 'should take query input' {
-            $Out = @( Invoke-SQLiteQuery @Verbose -Database $SQLiteFile -Query "PRAGMA table_info(NAMES)" -ErrorAction Stop )
+            $Out = Invoke-SQLiteQuery @Verbose -Database $SQLiteFile -Query "PRAGMA table_info(NAMES)" -ErrorAction Stop
             $Out.count | Should -Be 4
             $Out[0].Name | SHould -Be "fullname"
         }
 
         It 'should support parameterized queries' {
             
-            $Out = @( Invoke-SQLiteQuery @Verbose -Database $SQLiteFile -Query "SELECT * FROM NAMES WHERE BirthDate >= @Date" -SqlParameters @{
-                    Date = (Get-Date 3/13/2012)
-                } -ErrorAction Stop )
+            $Out = Invoke-SQLiteQuery @Verbose -Database $SQLiteFile -Query "SELECT * FROM NAMES WHERE BirthDate >= @Date" -SqlParameters @{
+                Date = (Get-Date 3/13/2012)
+            } -ErrorAction Stop 
             $Out.count | Should -Be 1
             $Out[0].fullname | Should -Be "Cookie Monster"
 
-            $Out = @( Invoke-SQLiteQuery @Verbose -Database $SQLiteFile -Query "SELECT * FROM NAMES WHERE BirthDate >= @Date" -SqlParameters @{
-                    Date = (Get-Date 3/15/2012)
-                } -ErrorAction Stop )
+            $Out = Invoke-SQLiteQuery @Verbose -Database $SQLiteFile -Query "SELECT * FROM NAMES WHERE BirthDate >= @Date" -SqlParameters @{
+                Date = (Get-Date 3/15/2012)
+            } -ErrorAction Stop 
             $Out.count | Should -Be 0
         }
 
         It 'should use existing SQLiteConnections' {
-            Invoke-SqliteQuery @Verbose -SQLiteConnection $global:Connection -Query "CREATE TABLE OrdersToNames (OrderID INT PRIMARY KEY, fullname TEXT);"
-            Invoke-SqliteQuery @Verbose -SQLiteConnection $global:Connection -Query "INSERT INTO OrdersToNames (OrderID, fullname) VALUES (1,'Cookie Monster');"
-            @( Invoke-SqliteQuery @Verbose -SQLiteConnection $global:Connection -Query "SELECT name FROM sqlite_master WHERE type='table';" ) |
-            Select -first 1 -ExpandProperty name |
+            Invoke-SqliteQuery @Verbose -SQLiteConnection $Connection -Query "CREATE TABLE OrdersToNames (OrderID INT PRIMARY KEY, fullname TEXT);"
+            Invoke-SqliteQuery @Verbose -SQLiteConnection $Connection -Query "INSERT INTO OrdersToNames (OrderID, fullname) VALUES (1,'Cookie Monster');"
+            (Invoke-SqliteQuery @Verbose -SQLiteConnection $Connection -Query "SELECT name FROM sqlite_master WHERE type='table';").Name | Select-Object -First 1 |
             Should -be 'OrdersToNames'
 
-            $global:COnnection.State | Should -Be Open
+            $COnnection.State | Should -Be Open
 
-            $global:Connection.close()
+            $Connection.close()
         }
 
         It 'should respect PowerShell expectations for null' {
@@ -90,11 +92,11 @@ Describe "Invoke-SQLiteQuery PS$PSVersion" {
             Invoke-SqliteQuery @Verbose -SQLiteConnection $Connection -Query "INSERT INTO OrdersToNames (OrderID, fullname) VALUES (1,'Cookie Monster');"
             Invoke-SqliteQuery @Verbose -SQLiteConnection $Connection -Query "INSERT INTO OrdersToNames (OrderID) VALUES (2);"
 
-            @( Invoke-SqliteQuery @Verbose -SQLiteConnection $Connection -Query "SELECT * FROM OrdersToNames" -As DataRow | Where { $_.fullname }).count |
+            (Invoke-SqliteQuery @Verbose -SQLiteConnection $Connection -Query "SELECT * FROM OrdersToNames" -As DataRow | Where { $_.fullname }).count |
             Should -Be 2
 
-            @( Invoke-SqliteQuery @Verbose -SQLiteConnection $Connection -Query "SELECT * FROM OrdersToNames" | Where { $_.fullname } ).count |
-            Should -Be 1
+            (Invoke-SqliteQuery @Verbose -SQLiteConnection $Connection -Query "SELECT * FROM OrdersToNames" | Where { $_.fullname } ).count |
+            Should -Be 2
         }
         It "should insert and verify JSON data in the database" {
             $Connection = New-SQLiteConnection -DataSource :MEMORY: 
@@ -153,7 +155,7 @@ Describe "Invoke-SQLiteBulkCopy PS$PSVersion" {
         It 'should insert data' {
             Invoke-SQLiteBulkCopy @Verbose -DataTable $Script:DataTable -DataSource $SQLiteFile -Table Names -NotifyAfter 100 -force
             
-            @( Invoke-SQLiteQuery @Verbose -Database $SQLiteFile -Query "SELECT fullname FROM NAMES WHERE surname = 'Name'" ).count | Should -Be 1000
+            ( Invoke-SQLiteQuery @Verbose -Database $SQLiteFile -Query "SELECT fullname FROM NAMES WHERE surname = 'Name'" ).count | Should -Be 1000
         }
         It "should adhere to ConflictCause" {
             
